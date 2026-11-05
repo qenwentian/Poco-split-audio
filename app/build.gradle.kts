@@ -8,15 +8,15 @@ android {
     defaultConfig {
         minSdk = 31
         targetSdk = 36
-        versionCode = 19
-        versionName = "0.5.7"
+        versionCode = 20
+        versionName = "0.5.7-poco-voip-test1"
     }
     // One code base, two builds:
     //   fdroid = Shizuku only, every feature free, accessibility volume keys (F-Droid / GitHub releases), applicationId app.splitaudio
     //   play   = Shizuku if granted, otherwise the built-in ADB client (no Shizuku needed); Pro features need a purchase or the trial; no accessibility service
     flavorDimensions += "dist"
     productFlavors {
-        create("fdroid") { dimension = "dist"; applicationId = "app.splitaudio" }
+        create("fdroid") { dimension = "dist"; applicationId = "app.pocoaudiorouter" }
         create("play") { dimension = "dist"; applicationId = "app.splitaudio.play" }
     }
     // Release builds are UNSIGNED on purpose: this file has no signing configuration and the build never reads a key file.

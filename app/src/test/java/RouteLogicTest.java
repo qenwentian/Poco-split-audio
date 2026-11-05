@@ -14,6 +14,17 @@ import org.junit.Test;
  * covered here; the control port on real sockets is in ControlChannelTest.
  */
 public class RouteLogicTest {
+    // The experiment must never override an actual cellular call or ringtone.
+    @Test public void voipRouting_onlyOptedInCommunicationMode() {
+        assertTrue(AppRoute.canRouteInMode(0, false));
+        assertTrue(AppRoute.canRouteInMode(0, true));
+        assertFalse(AppRoute.canRouteInMode(3, false));
+        assertTrue(AppRoute.canRouteInMode(3, true));
+        assertFalse(AppRoute.canRouteInMode(2, true));
+        assertFalse(AppRoute.canRouteInMode(1, true));
+        assertFalse(AppRoute.canRouteInMode(4, true));
+    }
+
     // ---- volume keys ----
     @Test public void volStep_aboutFifteenStepsWhateverTheRange() {
         assertEquals(1, AppRoute.volStep(0, 15));      // AOSP: 15 index steps

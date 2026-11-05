@@ -165,11 +165,20 @@ public class AppRoute {
     // Custom mode: each app picks its output. The map file (written by approute.sh startmap from the app's choices)
     //   has one line per target: "speaker:uid,uid" / "bt:uid,..." / "wired:uid,...". Apps not listed follow the system.
     //   A target whose device isn't connected gets no mix, so its apps follow the system too (never silence).
-    //   The rule is on only while a listed app played in the last 15 s and no call is going on; it is rebuilt when the
+    //   The rule is on only while a listed app played in the last 15 s. During calls it normally turns off;
+    //   the optional VoIP experiment keeps it enabled for MODE_IN_COMMUNICATION (never MODE_IN_CALL). It is rebuilt when the
     //   set of connected targets changes or the map file changes. Exits after no listed app played for 10 min.
     static final String[] TARGETS = {"speaker", "bt", "wired"};
+    static final String CALL_ROUTE_FLAG = "/data/local/tmp/approute.callroute";
     static final java.util.HashMap<String, int[]> map = new java.util.HashMap<>();
     static boolean mapMode = false;
+
+    // Keep phone calls and ringtones protected. Only a user-enabled VoIP experiment can route
+    // audio in communication mode; restoring the default takes effect at the next loop tick.
+    static boolean canRouteInMode(int audioMode, boolean allowVoip) {
+        return audioMode == AudioManager.MODE_NORMAL || (allowVoip && audioMode == AudioManager.MODE_IN_COMMUNICATION);
+    }
+    static boolean callRouteEnabled() { return new java.io.File(CALL_ROUTE_FLAG).exists(); }
 
     static String target(int type) {
         if (type == AudioDeviceInfo.TYPE_BUILTIN_SPEAKER) return "speaker";
@@ -219,12 +228,14 @@ public class AppRoute {
             java.util.HashSet<Integer> all = uidSet(TARGETS), onBt = uidSet("bt");
             java.util.HashMap<String, AudioDeviceInfo> dev = new java.util.HashMap<>();
             for (AudioDeviceInfo d : outputs()) { String t = target(d.getType()); if (t != null && !dev.containsKey(t)) dev.put(t, d); }
-            boolean call = inCall();
+            int audioMode = audioMode();
+            boolean call = audioMode != AudioManager.MODE_NORMAL;
+            boolean canRoute = canRouteInMode(audioMode, callRouteEnabled());
             // same as Simple mode: apps put on Bluetooth would follow a call/voice chat to the earpiece -> pause them meanwhile
-            if (call && !pausedForCall && dev.containsKey("bt") && !onBt.isEmpty() && musicPlaying(onBt)) {
+            if (!canRoute && call && !pausedForCall && dev.containsKey("bt") && !onBt.isEmpty() && musicPlaying(onBt)) {
                 sh("cmd media_session dispatch pause"); pausedForCall = true; log("call/voice mode -> music paused");
             }
-            if (!call && pausedForCall) {
+            if (canRoute && pausedForCall) {
                 pausedForCall = false;
                 if (!musicPlaying(onBt)) { sh("cmd media_session dispatch play"); log("call/voice mode over -> music resumed"); }
             }
@@ -237,14 +248,14 @@ public class AppRoute {
                 key.append(t).append('=').append(dev.get(t).getId()).append(';');
                 targets.put(dev.get(t), map.get(t));
             }
-            boolean want = !targets.isEmpty() && now - lastPlay < 15000 && !call;
+            boolean want = !targets.isEmpty() && now - lastPlay < 15000 && canRoute;
             if (want && (policy == null || !key.toString().equals(regKey))) {
                 if (policy != null) unregister();
                 try { registerAll(targets); regKey = key.toString(); log("rule on " + regKey); }
                 catch (Throwable e) { log("register fail " + e); policy = null; regKey = ""; }
             }
             if (policy != null) multiFocusOnce(all);
-            if (!want && policy != null) { unregister(); regKey = ""; log((call ? "call/voice mode" : targets.isEmpty() ? "no target device" : "nothing playing") + " -> rule off"); }
+            if (!want && policy != null) { unregister(); regKey = ""; log((!canRoute ? "call/voice mode" : targets.isEmpty() ? "no target device" : "nothing playing") + " -> rule off"); }
             if (now - Math.max(lastPlay, startAt) > 600000) {
                 if (policy != null) unregister();
                 log("nothing played 10min -> exit");
@@ -691,13 +702,14 @@ public class AppRoute {
     }
 
     // In a call (phone or VoIP) = audio mode is not NORMAL (0)
-    static boolean inCall() {
+    static int audioMode() {
         try {
             Object as = Class.forName("android.media.IAudioService$Stub").getMethod("asInterface", android.os.IBinder.class)
                 .invoke(null, Class.forName("android.os.ServiceManager").getMethod("getService", String.class).invoke(null, "audio"));
-            return ((Integer) as.getClass().getMethod("getMode").invoke(as)) != 0;
-        } catch (Throwable e) { return false; }
+            return (Integer) as.getClass().getMethod("getMode").invoke(as);
+        } catch (Throwable e) { return AudioManager.MODE_NORMAL; }
     }
+    static boolean inCall() { return audioMode() != AudioManager.MODE_NORMAL; }
 
     static AudioDeviceInfo[] outputs() throws Exception {
         return (AudioDeviceInfo[]) AudioManager.class.getMethod("getDevicesStatic", int.class).invoke(null, AudioManager.GET_DEVICES_OUTPUTS);

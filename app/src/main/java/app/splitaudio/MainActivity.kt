@@ -51,6 +51,8 @@ class MainActivity : Activity() {
     private lateinit var tvMf: TextView
     private lateinit var mkSw: Switch
     private lateinit var tvMk: TextView
+    private lateinit var callSw: Switch
+    private lateinit var tvCall: TextView
     private lateinit var tvModeDesc: TextView
     private lateinit var tvPro: TextView
     private lateinit var updCard: LinearLayout
@@ -70,6 +72,8 @@ class MainActivity : Activity() {
     private var mfBusy = false
     @Volatile private var mk: String? = null   // 按麥克風時不暫停音樂："on"／"off"／null（讀不到，當成預設的開）
     private var mkBusy = false
+    @Volatile private var callRoute: String? = null
+    private var callBusy = false
     private val ui = Handler(Looper.getMainLooper())
     private var ticking = false
     private val tickRun = object : Runnable {
@@ -209,6 +213,24 @@ class MainActivity : Activity() {
         cusCard.addView(mkSw)
         tvMk = text("", 13f, C_TEXT_2).apply { setPadding(0, 0, 0, dp(4)) }
         cusCard.addView(tvMk)
+        callSw = Switch(this).apply {
+            text = "📞 " + getString(R.string.call_route_title)
+            textSize = 15f; setTextColor(C_TEXT); setTypeface(typeface, Typeface.BOLD)
+            setPadding(0, dp(10), 0, dp(2))
+            setOnCheckedChangeListener { _, on ->
+                if (callBusy || on == (callRoute == "on")) return@setOnCheckedChangeListener
+                if (on) AlertDialog.Builder(this@MainActivity)
+                    .setTitle(R.string.call_route_title)
+                    .setMessage(R.string.call_route_warning)
+                    .setPositiveButton(R.string.call_route_enable) { _, _ -> applyCallRouting(true) }
+                    .setNegativeButton(android.R.string.cancel) { _, _ -> refreshSoon() }
+                    .show()
+                else applyCallRouting(false)
+            }
+        }
+        cusCard.addView(callSw)
+        tvCall = text(getString(R.string.call_route_desc), 13f, C_TEXT_2).apply { setPadding(0, 0, 0, dp(4)) }
+        cusCard.addView(tvCall)
         root.addView(cusCard)
 
         // 回報與意見（唯一一張回報卡）：標題問「在你的 <機型> 能用嗎？」；「能用！」「回報問題」開預填好的 GitHub 表單（只要按送出），
@@ -229,6 +251,9 @@ class MainActivity : Activity() {
             addView(btn(getString(R.string.btn_copy_diag), C_GREY) { copyDiag() })
             if (Dist.feedbackDismissable) btnFbClose = btn(getString(R.string.btn_close), C_GREY) { Health.answered(this@MainActivity, Diag.versionCode(this@MainActivity)); renderTop() }.also { addView(it) }
         }
+        // This is an experimental downstream build. Do not send reports or diagnostics
+        // to the original app maintainer's endpoints as if they came from a stock release.
+        fbCard.visibility = View.GONE
         if (Dist.updateCheck) {
             val about = card(Color.WHITE)
             // 0.5.5 免費版：新版檢查沒有開關（只說明它做什麼）；付費版保留開關
@@ -375,6 +400,15 @@ class MainActivity : Activity() {
         }.start()
     }
 
+    private fun applyCallRouting(on: Boolean) {
+        val c = applicationContext
+        Thread {
+            val result = Route.setCallRoute(c, on)
+            Route.lastStart = result
+            refreshSoon()
+        }.start()
+    }
+
     internal fun refreshSoon() {
         Thread {
             Thread.sleep(600)
@@ -386,6 +420,7 @@ class MainActivity : Activity() {
             val up = be != null && be.alive()   // 連著才去問（內建 ADB 已配對但斷線時，不要每次重新整理都去試著連線）
             mf = if (up) Route.multiFocusState() else null
             mk = if (up) Route.micKeepState() else null
+            callRoute = if (up) Route.callRouteState() else null
             val mfNow = Mf.reconcile(Mf.decision(this), mf)   // 系統設定早就開著（舊版開的）或舊版的關閉鈕按過 → 不用再問
             if (mfNow != Mf.decision(this)) Mf.setDecision(this, mfNow)
             val nMusic = Music.set(this).count { packageManager.getLaunchIntentForPackage(it) != null }
@@ -441,6 +476,12 @@ class MainActivity : Activity() {
                     mf == "off" || mf == "off_user" -> R.string.mic_keep_needs_mf   // 多重焦點沒開：打開這個也不會生效，說清楚
                     else -> R.string.mic_keep_on_d
                 })
+                callBusy = true
+                callSw.isChecked = callRoute == "on"
+                callSw.isEnabled = up && custom
+                callBusy = false
+                callSw.visibility = if (custom) View.VISIBLE else View.GONE
+                tvCall.visibility = if (custom) View.VISIBLE else View.GONE
             }
         }.start()
     }

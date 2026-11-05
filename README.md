@@ -1,5 +1,13 @@
 # SplitAudio — 藍牙只放音樂，其他 App 走手機喇叭 / Music on Bluetooth, everything else on the phone speaker
 
+> **Downstream experimental fork for POCO/HyperOS:** This copy adds an opt-in
+> **Route during Discord / VoIP calls (test)** switch in Custom mode. Its
+> `fdroid` flavor is renamed **POCO Audio Router**, uses a separate application
+> ID (`app.pocoaudiorouter`), and disables upstream update checks and feedback
+> prompts. The original MIT-licensed project and instructions remain below.
+> See [POCO_VOIP_TEST.md](POCO_VOIP_TEST.md) before trying it. The call-mode
+> behavior has **not** been verified on a physical POCO F6.
+
 <img src="fastlane/metadata/android/en-US/images/icon.png" width="112" align="right" alt="SplitAudio icon">
 
 > **狀態：alpha（實驗版）。** 只在 Xiaomi 15（HyperOS 3、Android 16）實機驗證過。需要 Android 12 以上，**不需要 root**。

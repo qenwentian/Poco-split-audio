@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">SplitAudio 分流</string>
+    <string name="app_name">POCO Audio Router</string>
     <string name="acc_desc">藍牙只放音樂時，在其他 App 畫面按音量鍵＝調手機喇叭；音樂 App／桌面照常調藍牙。只讀前景 App 名稱，不讀畫面內容。</string>
     <string name="intro">SplitAudio 分流\n簡單模式：藍牙只放音樂 App（YT Music），其他 App 的聲音走手機喇叭。\n自訂模式：每個 App 自己選從哪裡出聲。</string>
     <string name="sw_custom">自訂模式：每個 App 自己選輸出</string>

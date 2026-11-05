@@ -1,6 +1,6 @@
 #!/system/bin/sh
 # Start/stop AppRoute on the phone (runs as the shell user, e.g. via Shizuku or adb).
-# Usage: sh /data/local/tmp/approute.sh start|startmap|stop|status|multifocus on|off|state|mickeep on|off|state|mixer|mixstop|players|diag|ask <command>
+# Usage: sh /data/local/tmp/approute.sh start|startmap|stop|status|multifocus on|off|state|mickeep on|off|state|callroute on|off|state|mixer|mixstop|players|diag|ask <command>
 #   startmap = Custom mode: $D/approute.pkgmap (written by the app, lines "speaker|bt|wired:pkg,pkg") -> uids -> AppRoute map
 #   ask      = send one control command to the running router (state | mode | vol up|down <package>) and print its answer
 # The app puts its own uid and its control token in the environment (SPLITAUDIO_UID=<uid> SPLITAUDIO_TOKEN=<token> sh approute.sh ...):
@@ -100,6 +100,7 @@ case "$1" in
   diag)
     echo "multi_audio_focus_enabled=$(settings get system multi_audio_focus_enabled 2>/dev/null)"
     [ -e $D/approute.nomickeep ] && echo "mickeep=off" || echo "mickeep=on"
+    [ -e $D/approute.callroute ] && echo "voip_routing=on" || echo "voip_routing=off"
     P=$(pid); echo "router pid=${P:-none}"
     CLASSPATH=$D/approute.dex app_process /system/bin AppRoute diag 2>&1 | tail -n 20
     echo "router log:"; tail -n 20 $LOG 2>/dev/null ;;
@@ -116,4 +117,12 @@ case "$1" in
       off) : > $D/approute.nomickeep; chmod 644 $D/approute.nomickeep ;;
     esac
     [ -e $D/approute.nomickeep ] && echo "mickeep=off" || echo "mickeep=on" ;;
+  # Opt-in custom-mode experiment: keep per-app routing enabled in VoIP communication mode.
+  # Normal cellular calls and ringtone modes always disable the policy in AppRoute.java.
+  callroute)
+    case "$2" in
+      on) : > $D/approute.callroute; chmod 644 $D/approute.callroute ;;
+      off) rm -f $D/approute.callroute ;;
+    esac
+    [ -e $D/approute.callroute ] && echo "callroute=on" || echo "callroute=off" ;;
 esac

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">SplitAudio</string>
+    <string name="app_name">POCO Audio Router</string>
     <string name="acc_desc">While Bluetooth plays only the music app, the volume keys in other apps change the phone speaker volume; in the music app or on the home screen they change Bluetooth as usual. Reads only the foreground app\'s name, never screen content.</string>
     <string name="intro">SplitAudio\nSimple mode: the music app (YT Music) stays on Bluetooth, every other app plays on the phone speaker.\nCustom mode: pick the output for each app.</string>
     <string name="sw_custom">Custom mode: choose the output for each app</string>
@@ -73,6 +73,10 @@
     <string name="mic_keep_off_d">Off: the music stays paused while the microphone is in use and starts again when it is done.</string>
     <string name="mic_keep_needs_mf">Needs “Videos don\'t pause the music” above to be on. Until then the music starts again after the microphone is done.</string>
     <string name="mic_keep_result">Mic doesn\'t pause the music → %1$s</string>
+    <string name="call_route_title">Route during Discord / VoIP calls (test)</string>
+    <string name="call_route_desc">Custom mode only. Keeps the per-app output rules active while Android is in VoIP communication mode. Normal phone calls are excluded. Turn it off if media gets silent, moves to the earpiece, or the microphone misbehaves.</string>
+    <string name="call_route_warning">Experimental routing on HyperOS. Discord may still override YouTube\'s audio, and enabling this may cause silence or audio feedback. In Custom mode, set YouTube → Bluetooth and leave Discord → Default. Select Phone speaker inside Discord itself. Disable this switch to restore the original call behavior.</string>
+    <string name="call_route_enable">Enable experiment</string>
     <string name="live_on">Split active</string>
     <string name="live_wait">Waiting for music</string>
     <string name="live_none">Not running</string>

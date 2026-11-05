@@ -241,4 +241,16 @@ object Route {
         deploy(ctx)?.let { return it }
         return Backends.run(sh(ctx, "mickeep " + (if (on) "on" else "off")), 30).second.trim().lines().lastOrNull().orEmpty()
     }
+
+    /** Opt-in experimental per-app output routing during VoIP calls, restricted to Custom mode.
+     *  The shell-owned flag is read by AppRoute at each routing loop, so disabling restores ordinary behavior promptly. */
+    fun callRouteState(): String? {
+        val r = Backends.run("[ -e $D/approute.callroute ] && echo on || echo off", 10)
+        return micKeepOf(r.first, r.second)
+    }
+
+    @Synchronized fun setCallRoute(ctx: Context, on: Boolean): String {
+        deploy(ctx)?.let { return it }
+        return Backends.run(sh(ctx, "callroute " + (if (on) "on" else "off")), 30).second.trim().lines().lastOrNull().orEmpty()
+    }
 }
