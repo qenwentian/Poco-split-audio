@@ -137,7 +137,10 @@ class MonitorService : Service() {
 
     private fun checkCustom() {
         val any = Outputs.hasAny(this)
-        if (!(any && am.isMusicActive)) { Thread { setState(getString(if (ruleOnNoted()) R.string.s_split else if (!any) R.string.s_no_apps else R.string.s_idle)) }.start(); return }
+        // Custom mode starts the shell router even if the app-side music-active flag
+        // is false: a Discord/VoIP session may hide playback from this AudioManager.
+        // The helper itself only registers the audio policy when playback is observed.
+        if (!any) { Thread { setState(getString(if (ruleOnNoted()) R.string.s_split else R.string.s_no_apps)) }.start(); return }
         Thread {
             if (Route.running(this) && Route.mode(this) != "map") Route.stop(this)   // 簡單模式的路由還在跑 → 換成自訂
             if (ruleOnNoted()) { setState(getString(R.string.s_split)); return@Thread }
