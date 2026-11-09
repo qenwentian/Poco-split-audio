@@ -9,7 +9,7 @@ android {
         minSdk = 31
         targetSdk = 36
         versionCode = 20
-        versionName = "0.5.7-poco-voip-test1"
+        versionName = "0.5.7-poco-voip-test2"
     }
     // One code base, two builds:
     //   fdroid = Shizuku only, every feature free, accessibility volume keys (F-Droid / GitHub releases), applicationId app.splitaudio
