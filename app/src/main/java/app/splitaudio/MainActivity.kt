@@ -236,7 +236,8 @@ class MainActivity : Activity() {
             val context = applicationContext
             Toast.makeText(this, "Collecting routing diagnostics…", Toast.LENGTH_SHORT).show()
             Thread {
-                val details = Diag.text(context) + "\n\nRouter diagnostics:\n" + Route.diag(context).joinToString("\n")
+                // Request router state once; keep data local until the user copies it.
+                val details = Report.diagnostics(Diag.info(context, router = true))
                 runOnUiThread {
                     getSystemService(ClipboardManager::class.java)
                         .setPrimaryClip(ClipData.newPlainText("POCO Audio Router diagnostics", details))
