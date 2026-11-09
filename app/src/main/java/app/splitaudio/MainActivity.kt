@@ -231,6 +231,19 @@ class MainActivity : Activity() {
         cusCard.addView(callSw)
         tvCall = text(getString(R.string.call_route_desc), 13f, C_TEXT_2).apply { setPadding(0, 0, 0, dp(4)) }
         cusCard.addView(tvCall)
+        // Experimental fork: diagnostics stay on this phone unless the user copies them.
+        cusCard.addView(btn("📋 Copy routing diagnostics", C_GREY) {
+            val context = applicationContext
+            Toast.makeText(this, "Collecting routing diagnostics…", Toast.LENGTH_SHORT).show()
+            Thread {
+                val details = Diag.text(context) + "\n\nRouter diagnostics:\n" + Route.diag(context).joinToString("\n")
+                runOnUiThread {
+                    getSystemService(ClipboardManager::class.java)
+                        .setPrimaryClip(ClipData.newPlainText("POCO Audio Router diagnostics", details))
+                    Toast.makeText(this, "Diagnostics copied; review before sharing", Toast.LENGTH_LONG).show()
+                }
+            }.start()
+        })
         root.addView(cusCard)
 
         // 回報與意見（唯一一張回報卡）：標題問「在你的 <機型> 能用嗎？」；「能用！」「回報問題」開預填好的 GitHub 表單（只要按送出），
