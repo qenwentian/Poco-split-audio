@@ -83,10 +83,15 @@ class MixerActivity : Activity() {
         val c = applicationContext
         Thread {
             if (Backends.current() == null) { runOnUiThread { status.text = getString(R.string.mixer_need_setup) }; return@Thread }
-            Route.deploy(c)
             Mixer.ensure(c)
+            val active = Mixer.running()
             val p = Mixer.playingUids(c).map { it % 100000 }.toSet()   // 第二空間／工作設定檔的 uid 也算同一個 App
-            runOnUiThread { playing = p; status.text = getString(R.string.mixer_playing_n, all.count { it.uid % 100000 in p }); filter() }
+            runOnUiThread {
+                playing = p
+                status.text = getString(R.string.mixer_playing_n, all.count { it.uid % 100000 in p }) +
+                    " · " + getString(if (active) R.string.mixer_running else R.string.mixer_not_running)
+                filter()
+            }
         }.start()
     }
 
