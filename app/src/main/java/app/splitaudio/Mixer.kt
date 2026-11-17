@@ -42,11 +42,16 @@ object Mixer {
     }
 
     /** 有設定但 mixer 沒在跑（例：手機重開過）→ 起來。背景執行緒叫。 */
-    fun ensure(c: Context) {
+    @Synchronized fun ensure(c: Context) {
         if (!hasAny(c) || Backends.current() == null) return
-        // [A] 寫法:這條 sh 自己的命令列也含這串字,不加方括號 pgrep 會找到自己 → 永遠以為在跑
-        if (Backends.run("pgrep -f '[A]ppRoute mixer' >/dev/null && echo y", 10).second.trim() != "y") apply(c)
+        // Do not duplicate the shell mixer when several playback events arrive together.
+        if (!running()) apply(c)
     }
+
+    /** The shell mixer continues running even while the mixer screen is closed. */
+    fun running(): Boolean =
+        Backends.current() != null &&
+            Backends.run("pgrep -f '[A]ppRoute mixer' >/dev/null && echo y", 10).second.trim() == "y"
 
     /** 現在正在出聲的 App 的 uid；讀不到回空集合。背景執行緒叫。 */
     fun playingUids(c: Context): Set<Int> {
