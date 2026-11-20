@@ -12,6 +12,12 @@ class MixerTest {
 
     @Test fun text_empty() = assertEquals("", Mixer.text(emptyMap()))
 
+    @Test fun text_zeroMutesGame_andYouTubeAtDefaultIsOmitted() {
+        val settings = Mixer.valid(mapOf("com.example.game" to 0))
+        assertEquals("com.example.game=0.00\n", Mixer.text(settings))
+        assertFalse(settings.containsKey("com.google.android.youtube"))
+    }
+
     @Test fun text_alwaysUsesDotDecimalSeparator() {
         val old = java.util.Locale.getDefault()
         try {

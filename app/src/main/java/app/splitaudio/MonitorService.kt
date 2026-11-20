@@ -29,10 +29,16 @@ class MonitorService : Service() {
 
     private val playRun = Runnable { check("play"); mixer() }
     private val btRun = Runnable { check("bt") }
-    private val startRun = Runnable { check("start") }
-    private val shizukuRun = Runnable { check("shizuku") }
+    private val startRun = Runnable { check("start"); mixer() }
+    private val shizukuRun = Runnable { check("shizuku"); mixer() }
     private val tickRun = object : Runnable {
-        override fun run() { if (bt() || Outputs.custom(this@MonitorService)) check("tick"); h.postDelayed(this, 60_000) }
+        override fun run() {
+            if (bt() || Outputs.custom(this@MonitorService)) check("tick")
+            // Volume mixing is independent of the Bluetooth/output router.
+            // Recover after sleep, reboot, or a missing playback callback.
+            mixer()
+            h.postDelayed(this, 60_000)
+        }
     }
     private val playbackCb = object : AudioManager.AudioPlaybackCallback() {
         override fun onPlaybackConfigChanged(c: MutableList<AudioPlaybackConfiguration>?) { rearm(playRun, 1200) }
@@ -152,10 +158,13 @@ class MonitorService : Service() {
         }.start()
     }
 
-    /** 每個 App 音量（0.4）：有設定但 mixer 沒在跑（例：手機重開過）→ 起來；30 秒內不重查 */
+    /** Saved app volumes are enforced independently of output routing.
+     *  Startup, Shizuku reconnection, playback callbacks and periodic recovery
+     *  all reach here; only a connected backend can consume a retry. */
     private fun mixer() {
+        if (!Mixer.hasAny(this) || Backends.current() == null) return
         val now = System.currentTimeMillis()
-        if (now - lastMix < 30_000 || !Mixer.hasAny(this)) return
+        if (now - lastMix < 30_000) return
         lastMix = now
         val c = applicationContext
         Thread { Mixer.ensure(c) }.start()

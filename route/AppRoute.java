@@ -119,8 +119,20 @@ public class AppRoute {
         return m;
     }
 
+    static boolean mixerVolumeErrorLogged = false;
     static boolean setPlayerVolume(Object px, float v) {
-        try { px.getClass().getMethod("setVolume", float.class).invoke(px, v); return true; } catch (Throwable e) { return false; }
+        try {
+            px.getClass().getMethod("setVolume", float.class).invoke(px, v);
+            return true;
+        } catch (Throwable e) {
+            // Some OEM audio frameworks reject this hidden API. Make that visible
+            // in diagnostics instead of silently claiming the game is muted.
+            if (!mixerVolumeErrorLogged) {
+                mixerVolumeErrorLogged = true;
+                log("mixer setVolume unsupported: " + e);
+            }
+            return false;
+        }
     }
 
     static void mixerMain(String path) throws Exception {
@@ -136,7 +148,9 @@ public class AppRoute {
                 log("mixer " + want);
                 if (want.isEmpty()) break;
             }
-            long now = System.currentTimeMillis(); boolean full = now - lastFull > 5000;
+            // Apps can change their player gains after launch. Reapply muted/saved
+            // volume on each mixer poll, including after a game recreates players.
+            long now = System.currentTimeMillis(); boolean full = now - lastFull >= 1000;
             if (full) lastFull = now;
             java.util.HashSet<Integer> seen = new java.util.HashSet<>();
             try {
