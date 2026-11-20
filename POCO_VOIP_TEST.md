@@ -30,6 +30,21 @@ sh route/build_dex.sh
 
 The APK is produced at `app/build/outputs/apk/fdroid/debug/app-fdroid-debug.apk`. Build the new DEX before the APK; otherwise the APK may package the original helper and ignore the new call-mode behavior. Do **not** run the original SplitAudio app simultaneously: both use the same shell helper paths and local control port.
 
+## Test 2: Custom-mode startup and local diagnostic copy
+
+Custom mode now starts its shell helper when any app has a non-default
+output. It no longer waits for the app-side `AudioManager.isMusicActive`
+signal, which can be misleading during a Discord/VoIP session. The helper
+itself still waits until playback before registering an audio policy.
+
+Use **Copy routing diagnostics** on the Customize card while YouTube plays
+and Discord is in speaker mode. Review the copied text before sharing.
+It contains audio mode, active-player UIDs, recent router errors, and the
+VoIP-routing flag, and is not transmitted to an external server.
+
+A different debug signing key may require uninstalling the older test APK
+before installing this version (settings will be reset).
+
 ## Status
 
 The Android DEX helper and signed **debug APK** built successfully with Android SDK 36 and JDK 17. The local test suite passed (184 passed, 1 skipped). A production release signature and physical-device validation are still pending. The source implements a real system-level routing experiment, but cannot guarantee Discord and YouTube stay separated until tested on the target POCO F6/HyperOS firmware.
